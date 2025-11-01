@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Updated color palette with more vibrant pastels from reference image */
+        :root{
+            --bg: linear-gradient(135deg, #fef9f3 0%, #fef5f8 50%, #f3f7fe 100%);
+            --card: #ffffff;
+            --muted: #6b7280;
+            --primary: #a78bfa;
+            --lavender: #c4b5fd;
+            --mint: #6ee7b7;
+            --coral: #fca5a5;
+            --peach: #fcd34d;
+            --sky: #7dd3fc;
+            --rose: #fda4af;
+            --income-color: #10b981;
+            --expense-color: #f87171;
+            --radius: 16px;
+            --gap: 16px;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: var(--bg);
+            background-attachment: fixed;
+            color: #1f2937;
+        }
+        
+        .dashboard {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Redesigned header with silver-diamond theme */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #F8FAFC 0%, #E2E8F0 100%);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        /* Styled menu button with gradient */
+        .menu-btn {
+            font-size: 20px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #94A3B8 0%, #CBD5E1 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .menu-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .header-center {
+            text-align: center;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .header-center h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #64748B 0%, #94A3B8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Colorful summary cards */
+        .summary {
+            font-size: 14px;
+            color: var(--muted);
+            margin-top: 6px;
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .summary h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .summary .income {
+            color: var(--income-color);
+            font-weight: 600;
+        }
+        
+        .summary .expense {
+            color: var(--expense-color);
+            font-weight: 600;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        /* Notification bell with gradient background */
+        .notification-bell {
+            font-size: 18px;
+            color: #64748B;
+            padding: 10px;
+            background: linear-gradient(135deg, rgba(148, 163, 184, 0.1) 0%, rgba(203, 213, 225, 0.1) 100%);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .notification-bell:hover {
+            transform: scale(1.1);
+        }
+        
+        .profile-dropdown {
+            position: relative;
+        }
+        
+        /* Profile image with colorful border */
+        .profile-dropdown img {
+            width: 44px;
+            height: 44px;
+            border-radius: 999px;
+            object-fit: cover;
+            border: 3px solid transparent;
+            background: linear-gradient(white, white) padding-box,
+                        linear-gradient(135deg, #94A3B8, #CBD5E1) border-box;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .profile-dropdown img:hover {
+            transform: scale(1.05);
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 56px;
+            background: var(--card);
+            border: 1px solid rgba(167, 139, 250, 0.2);
+            padding: 12px;
+            width: 240px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .dropdown-menu a {
+            display: block;
+            padding: 10px 12px;
+            color: #374151;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: background 0.2s;
+        }
+        
+        .dropdown-menu a:hover {
+            background: linear-gradient(135deg, rgba(167, 139, 250, 0.1) 0%, rgba(125, 211, 252, 0.1) 100%);
+        }
+
+        /* Updated layout with colorful cards */
+        .main-content {
+            display: flex;
+            gap: 24px;
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        /* Sidebar with gradient cards */
+        aside.sidebar-forms {
+            width: 340px;
+            min-width: 300px;
+            max-width: 36%;
+        }
+        
+        aside.sidebar-forms h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #a78bfa 0%, #7dd3fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        section {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* Different colored form cards for visual variety */
+        .form-card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            border: 1px solid rgba(167, 139, 250, 0.15);
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Income form - mint green accent */
+        .form-card.income-form::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #6ee7b7 0%, #10b981 100%);
+        }
+        
+        /* Expense form - coral/rose accent */
+        .form-card.expense-form::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #fca5a5 0%, #fda4af 100%);
+        }
+        
+        /* Monthly budget form - lavender/purple accent */
+        .form-card.budget-form::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #a78bfa 0%, #c4b5fd 100%);
+        }
+        
+        form input, form select, form textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            border: 2px solid rgba(167, 139, 250, 0.2);
+            font-size: 14px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: rgba(255, 255, 255, 0.8);
+        }
+        
+        form input:focus, form select:focus, form textarea:focus {
+            outline: none;
+            border-color: #a78bfa;
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1);
+        }
+        
+        /* Gradient button */
+        form button {
+            width: 100%;
+            background: linear-gradient(135deg, #a78bfa 0%, #7dd3fc 100%);
+            color: white;
+            border: none;
+            padding: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 12px;
+            font-size: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        form button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        form button#submitBtn {
+            display: block;
+        }
+
+        /* Toggle button with gradient */
+        .toggle-chart-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, rgba(167, 139, 250, 0.15) 0%, rgba(125, 211, 252, 0.15) 100%);
+            border: 2px solid rgba(167, 139, 250, 0.3);
+            border-radius: 12px;
+            cursor: pointer;
+            margin-bottom: 16px;
+            font-weight: 600;
+            color: #6b7280;
+            transition: all 0.2s;
+        }
+        
+        .toggle-chart-btn:hover {
+            background: linear-gradient(135deg, rgba(167, 139, 250, 0.25) 0%, rgba(125, 211, 252, 0.25) 100%);
+            transform: translateY(-2px);
+        }
+
+        /* Chart and advisor with colorful styling */
+        .top-analysis {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        
+        .chart-container {
+            flex: 1;
+            min-width: 300px;
+            background: var(--card);
+            padding: 24px;
+            border-radius: var(--radius);
+            border: 1px solid rgba(110, 231, 183, 0.2);
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .chart-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #6ee7b7 0%, #7dd3fc 100%);
+        }
+        
+        .chart-container canvas {
+            width: 100% !important;
+            height: auto !important;
+            display: block;
+        }
+
+        /* Advisor box with peach/coral gradient */
+        .advisor-box {
+            width: 320px;
+            max-width: 36%;
+            background: linear-gradient(135deg, rgba(252, 165, 165, 0.08) 0%, rgba(252, 211, 77, 0.08) 100%);
+            padding: 24px;
+            border-radius: var(--radius);
+            border: 1px solid rgba(252, 165, 165, 0.25);
+            font-size: 14px;
+            color: #4b5563;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .advisor-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #fca5a5 0%, #fcd34d 100%);
+        }
+        
+        .advisor-box strong {
+            display: block;
+            margin-bottom: 12px;
+            font-size: 16px;
+            color: #1f2937;
+        }
+        
+        .advisor-box p {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+
+        /* Section title with gradient */
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #a78bfa 0%, #7dd3fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Transaction header with soft background */
+        #transactionHeader {
+            display: flex;
+            padding: 14px 20px;
+            font-weight: 700;
+            color: #374151;
+            background: linear-gradient(135deg, rgba(196, 181, 253, 0.15) 0%, rgba(167, 139, 250, 0.15) 100%);
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+        
+        #transactionHeader > div {
+            padding: 0 8px;
+        }
+        
+        .header-date { flex: 1.2; }
+        .header-type { flex: 0.7; }
+        .header-amount { flex: 1.1; }
+        .header-category { flex: 1; }
+        .header-description { flex: 2; }
+        .header-actions { flex: 0 0 80px; text-align: right; }
+
+        /* Transaction rows with colorful borders */
+        .transaction-row {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            background: var(--card);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border-left: 4px solid transparent;
+            gap: 8px;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .transaction-row:hover {
+            transform: translateX(4px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .transaction-row[data-type="income"] {
+            border-left-color: var(--income-color);
+        }
+        
+        .transaction-row[data-type="expense"] {
+            border-left-color: var(--expense-color);
+        }
+        
+        .transaction-row > div {
+            padding: 4px 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .col-date { flex: 1.2; color: #374151; font-weight: 500; }
+        .col-type { flex: 0.7; text-transform: capitalize; }
+        .col-amount { flex: 1.1; font-weight: 700; }
+        .col-category { flex: 1; }
+        .col-description { flex: 2; color: #6b7280; }
+        .col-actions { flex: 0 0 80px; text-align: right; display: flex; justify-content: flex-end; gap: 12px; }
+
+        .action-icon {
+            color: #6b7280;
+            font-size: 16px;
+            text-decoration: none;
+            transition: color 0.2s, transform 0.2s;
+        }
+        
+        .action-icon:hover {
+            transform: scale(1.2);
+        }
+        
+        .action-icon.edit-btn:hover {
+            color: #7dd3fc;
+        }
+        
+        .action-icon:not(.edit-btn):hover {
+            color: #f87171;
+        }
+        
+        .col-amount.income { color: var(--income-color); }
+        .col-amount.expense { color: var(--expense-color); }
+
+        /* Money Cards with Colorful Gradients */
+        .money-card {
+            background: var(--card);
+            padding: 24px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Purple Gradient Card */
+        .money-card.purple {
+            background: linear-gradient(135deg, #a78bfa20 0%, #c4b5fd10 100%);
+            border-left: 4px solid #a78bfa;
+        }
+        
+        /* Green Gradient Card */
+        .money-card.green {
+            background: linear-gradient(135deg, #6ee7b720 0%, #10b98110 100%);
+            border-left: 4px solid #10b981;
+        }
+        
+        /* Rose Gradient Card */
+        .money-card.rose {
+            background: linear-gradient(135deg, #fca5a520 0%, #fda4af10 100%);
+            border-left: 4px solid #fda4af;
+        }
+        
+        /* Blue Gradient Card */
+        .money-card.blue {
+            background: linear-gradient(135deg, #7dd3fc20 0%, #0ea5e910 100%);
+            border-left: 4px solid #7dd3fc;
+        }
+        
+        /* Card hover effects */
+        .money-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        /* Card content styling */
+        .money-card .amount {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 8px 0;
+        }
+
+        .money-card.purple .amount { color: #a78bfa; }
+        .money-card.green .amount { color: #10b981; }
+        .money-card.rose .amount { color: #fda4af; }
+        .money-card.blue .amount { color: #7dd3fc; }
+
+        .money-card .label {
+            font-size: 14px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <header>
+            <div class="header-left">
+                <!-- Menu button (hamburger) -->
+                <button class="menu-btn">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            <div class="header-center">
+                <!-- Title with gradient text -->
+                <h1>Money Manager</h1>
+                <!-- Summary with income and expense -->
+                <div class="summary">
+                    <div>
+                        <strong>Total Income:</strong> <span class="income">$5,000</span>
+                    </div>
+                    <div>
+                        <strong>Total Expense:</strong> <span class="expense">$3,200</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-right">
+                <!-- Notification bell -->
+                <div class="notification-bell">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <!-- Profile image with dropdown -->
+                <div class="profile-dropdown">
+                    <img src="https://via.placeholder.com/44" alt="Profile Image">
+                    <div class="dropdown-menu">
+                        <a href="#">View Profile</a>
+                        <a href="#">Settings</a>
+                        <a href="#">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main content area -->
+        <div class="main-content">
+            <!-- Sidebar forms -->
+            <aside class="sidebar-forms">
+                <!-- Income form card -->
+                <div class="form-card income-form">
+                    <h3>New Income</h3>
+                    <form>
+                        <input type="text" placeholder="Source of Income" required>
+                        <input type="number" placeholder="Amount" required>
+                        <textarea placeholder="Description"></textarea>
+                        <button type="submit">Add Income</button>
+                    </form>
+                </div>
+
+                <!-- Expense form card -->
+                <div class="form-card expense-form">
+                    <h3>New Expense</h3>
+                    <form>
+                        <input type="text" placeholder="Expense Category" required>
+                        <input type="number" placeholder="Amount" required>
+                        <textarea placeholder="Description"></textarea>
+                        <button type="submit">Add Expense</button>
+                    </form>
+                </div>
+
+                <!-- Monthly budget form card -->
+                <div class="form-card budget-form">
+                    <h3>Set Monthly Budget</h3>
+                    <form>
+                        <input type="number" placeholder="Budget Amount" required>
+                        <textarea placeholder="Notes"></textarea>
+                        <button type="submit">Set Budget</button>
+                    </form>
+                </div>
+            </aside>
+
+            <!-- Main section with charts and analysis -->
+            <section>
+                <!-- Top analysis section with chart and advisor -->
+                <div class="top-analysis">
+                    <!-- Chart container -->
+                    <div class="chart-container">
+                        <canvas id="incomeExpenseChart"></canvas>
+                    </div>
+
+                    <!-- Advisor box -->
+                    <div class="advisor-box">
+                        <strong>Financial Advisor</strong>
+                        <p>Based on your spending habits, we suggest:</p>
+                        <ul>
+                            <li>Increase savings to at least 20% of income.</li>
+                            <li>Consider investing in low-cost index funds.</li>
+                            <li>Aim to reduce discretionary spending by 10%.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Section for transactions -->
+                <div>
+                    <!-- Transaction header -->
+                    <div id="transactionHeader">
+                        <div class="header-date">Date</div>
+                        <div class="header-type">Type</div>
+                        <div class="header-amount">Amount</div>
+                        <div class="header-category">Category</div>
+                        <div class="header-description">Description</div>
+                        <div class="header-actions">Actions</div>
+                    </div>
+
+                    <!-- Transaction rows (example data) -->
+                    <div class="transaction-row" data-type="income">
+                        <div class="col-date">2023-10-01</div>
+                        <div class="col-type">Income</div>
+                        <div class="col-amount income">$1,000</div>
+                        <div class="col-category">Salary</div>
+                        <div class="col-description">Monthly salary</div>
+                        <div class="col-actions">
+                            <a href="#" class="action-icon edit-btn"><i class="fas fa-edit"></i></a>
+                            <a href="#" class="action-icon"><i class="fas fa-trash"></i></a>
+                        </div>
+                    </div>
+
+                    <div class="transaction-row" data-type="expense">
+                        <div class="col-date">2023-10-02</div>
+                        <div class="col-type">Expense</div>
+                        <div class="col-amount expense">$200</div>
+                        <div class="col-category">Food</div>
+                        <div class="col-description">Groceries and dining</div>
+                        <div class="col-actions">
+                            <a href="#" class="action-icon edit-btn"><i class="fas fa-edit"></i></a>
+                            <a href="#" class="action-icon"><i class="fas fa-trash"></i></a>
+                        </div>
+                    </div>
+
+                    <!-- More transaction rows... -->
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Chart.js script for rendering the chart -->
+    <script>
+        const ctx = document.getElementById('incomeExpenseChart').getContext('2d');
+        const incomeExpenseChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+                datasets: [
+                    {
+                        label: 'Income',
+                        data: [1200, 1900, 3000, 2500, 2200, 3500, 4000, 3700, 4500, 4800, 5000, 6000],
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Expense',
+                        data: [800, 1200, 1500, 2000, 1800, 2200, 2500, 2700, 3000, 3200, 3500, 4000],
+                        backgroundColor: 'rgba(248, 113, 113, 0.7)',
+                        borderColor: 'rgba(248, 113, 113, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Monthly Income and Expense'
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

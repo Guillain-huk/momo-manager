@@ -1,0 +1,28 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# Node / Next / Prisma
+node_modules/
+.next/
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+.DS_Store
+
+# Prisma
+.prisma/
+lib/generated/prisma
+
+# Editor
+.vscode/
+.idea/
+
+# Build / debug
+out/
+build/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
